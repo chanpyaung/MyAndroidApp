@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">WaveFormEditor</string>
+    <string name="import_text_file">Import Text File</string>
+    <string name="browse">Browse</string>
 </resources>
