@@ -1,6 +1,7 @@
 package com.chanaung.waveformeditor
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +19,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val saveFile = registerForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) {
+        Log.d(MainActivity::class.java.canonicalName, it?.toString().orEmpty())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -29,12 +34,16 @@ class MainActivity : AppCompatActivity() {
                 waveForms.map { pair ->
                     stringBuilder.append("${pair.first} ${pair.second}\n")
                 }
-                binding.textView.text = stringBuilder.toString()
+                binding.waveFormView.addWaveForms(waveForms)
             }
         }
 
         binding.openFileBtn.setOnClickListener {
             getContent.launch("text/plain")
+        }
+
+        binding.saveFileBtn.setOnClickListener {
+            saveFile.launch("Hello File")
         }
     }
 }
