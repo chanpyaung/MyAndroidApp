@@ -3,7 +3,6 @@ package com.chanaung.waveformeditor.views
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import kotlin.math.abs
@@ -29,15 +28,11 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     private val minGap = 50f
 
     private val path = Path()
+    private val clipPath = Path()
     private var mWidth = 1f
     private var mHeight = 1f
     private var waveForms = mutableListOf<Pair<Float, Float>>()
 
-    private var trimArea: RectF
-
-    private var trimAreaPaint = Paint().apply {
-        color = Color.argb(0,255, 255, 255)
-    }
     private var trimLinePaint = Paint().apply {
         color = Color.argb(255, 126, 137, 153)
         strokeWidth = 5f
@@ -45,12 +40,8 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     init {
         mWidth = resources.displayMetrics.widthPixels.toFloat()
         mHeight = resources.displayMetrics.heightPixels.toFloat()
-        trimArea = RectF().apply {
-            left = startTrimX
-            right = endTrimX
-            top = 0f
-            bottom = resources.displayMetrics.heightPixels.toFloat()
-        }
+        path.reset()
+        clipPath.reset()
         waveForms.clear()
     }
 
@@ -74,12 +65,11 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     }
 
     private fun drawWaveForm(canvas: Canvas) {
-
+        path.reset()
         val defaultAmplitudeHeight = 1.0f
         val centerY = (mHeight/2).toFloat() // this should give me the middle point, so assuming top = 0 to be 1, centerY = 0 && height/bottom = -1
         val stepX = mWidth/(waveForms.size-1)
         for (i in 0 until  waveForms.size-1) {
-            path.reset()
             val start = i * stepX
             val right = (i + 1) * stepX
             val top = abs(waveForms[i].second) * centerY
@@ -96,15 +86,19 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
                 lineTo(start, amplitudeBottom)
                 lineTo(right, nextAmplitudeBottom)
                 lineTo(right, nextAmplitudeTop)
-                //TODO: add curveTo?
-            }
-            canvas.drawPath(path, if (start < startTrimX || right > endTrimX) inactivePaint else paint)
-            if (i == waveForms.size - 2) {
-                Log.d("END: ", "right: $right, width: $mWidth, i: $i, wfs: ${waveForms.size}, WF: ${waveForms[i+1]}")
             }
         }
+        path.lineTo(mWidth, centerY)
+        path.close()
 
-        drawTrimArea(canvas)
+        canvas.drawPath(path, inactivePaint)
+        canvas.save()
+        clipPath.reset()
+        clipPath.addRect(startTrimX, 0f, endTrimX, mHeight, Path.Direction.CCW)
+        canvas.clipPath(clipPath)
+        canvas.drawPath(path, paint)
+        canvas.restore()
+        drawTrimLines(canvas)
     }
 
     fun addWaveForms(mWaveforms: List<Pair<Float, Float>>) {
@@ -121,22 +115,19 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
         invalidate()
     }
 
-    fun getTrimmedWaveForm(): List<Pair<Float, Float>> {
+    fun getTrimmedWaveForm(): List<Pair<Float, Float>>? {
+        if (waveForms.isEmpty()) {
+            return null
+        }
         val startIndex = (startTrimX / width * waveForms.size).toInt()
         var endIndex = (endTrimX / width * waveForms.size).toInt()
         if (endIndex == waveForms.size) {
             endIndex -= 1
         }
-        Log.d("start: ", "startTrimX: $startTrimX, $startIndex")
-        Log.d("end: ", "endTrimX: $endTrimX, $endIndex")
         return waveForms.toMutableList().slice(startIndex..endIndex)
     }
 
-    private fun drawTrimArea(canvas: Canvas) {
-        if (trimArea.width() <= 0 || trimArea.height() <= 0) {
-            return
-        }
-        canvas.drawRect(trimArea, trimAreaPaint)
+    private fun drawTrimLines(canvas: Canvas) {
         canvas.drawLine(startTrimX, 0f, startTrimX, mHeight, trimLinePaint)
         canvas.drawLine(endTrimX, 0f, endTrimX, mHeight, trimLinePaint)
     }
@@ -175,12 +166,10 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
         val rightDistance = abs(x - endTrimX)
         if (leftDistance < rightDistance && endTrimX - x > minGap) {
             if(endTrimX - x >= minGap && x > 0) {
-                trimArea.left = x
                 startTrimX = x
             }
         } else {
             if (x - startTrimX >= minGap && x - startTrimX > minGap && x < mWidth) {
-                trimArea.right = x
                 endTrimX = x
             }
         }
