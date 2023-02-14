@@ -9,6 +9,13 @@ import kotlin.math.abs
 
 class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs) {
 
+    companion object {
+        const val TRIM_LINE_TOUCH_AREA = 30f
+    }
+    private enum class TrimLine {
+        START, END, NONE
+    }
+
     private var paint = Paint().apply {
         color = Color.argb( 255, 76, 175, 80)
         strokeWidth = 2f
@@ -32,11 +39,17 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     private var mWidth = 1f
     private var mHeight = 1f
     private var waveForms: List<Pair<Float, Float>>? = null
+    private var activeTrimLine = TrimLine.NONE
 
     fun getWaveForms(): List<Pair<Float, Float>>? = waveForms
 
     private var trimLinePaint = Paint().apply {
         color = Color.argb(255, 126, 137, 153)
+        strokeWidth = 5f
+    }
+
+    private var activeTrimLinePaint = Paint().apply {
+        color = Color.WHITE
         strokeWidth = 5f
     }
     init {
@@ -144,51 +157,49 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     }
 
     private fun drawTrimLines(canvas: Canvas) {
-        canvas.drawLine(startTrimX, 0f, startTrimX, mHeight, trimLinePaint)
-        canvas.drawLine(endTrimX, 0f, endTrimX, mHeight, trimLinePaint)
+        canvas.drawLine(startTrimX, 0f, startTrimX, mHeight, if (activeTrimLine == TrimLine.START) activeTrimLinePaint else trimLinePaint)
+        canvas.drawLine(endTrimX, 0f, endTrimX, mHeight, if (activeTrimLine == TrimLine.END) activeTrimLinePaint else trimLinePaint)
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        when(event?.action) {
-            MotionEvent.ACTION_DOWN -> {
-                handleActionDown(event)
+        event?.let {
+            val x = event.x
+            when(event?.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    if (x >= startTrimX - TRIM_LINE_TOUCH_AREA && x <= startTrimX + TRIM_LINE_TOUCH_AREA) {
+                        activeTrimLine = TrimLine.START
+                    } else if (x >= endTrimX - TRIM_LINE_TOUCH_AREA && x <= endTrimX + TRIM_LINE_TOUCH_AREA) {
+                        activeTrimLine = TrimLine.END
+                    } else {
+                        activeTrimLine = TrimLine.NONE
+                    }
+                }
+                MotionEvent.ACTION_UP -> {
+                    activeTrimLine = TrimLine.NONE
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (activeTrimLine != TrimLine.NONE) {
+                        when(activeTrimLine) {
+                            TrimLine.START -> {
+                                if(endTrimX - x >= minGap && x > 0) {
+                                    startTrimX = x
+                                }
+                            }
+                            TrimLine.END -> {
+                                if (x - startTrimX >= minGap && x - startTrimX > minGap && x < mWidth) {
+                                    endTrimX = x
+                                }
+                            }
+                            else -> {}
+                        }
+                        invalidate()
+                    }
+
+                }
+                else -> return false
             }
-            MotionEvent.ACTION_UP -> {
-                handleActionUp(event)
-            }
-            MotionEvent.ACTION_MOVE -> {
-                handleActionMove(event)
-            }
-            else -> return false
         }
         return true
-    }
-
-    private fun handleActionDown(event: MotionEvent) {
-        calculateX(event.x)
-    }
-
-    private fun handleActionMove(event: MotionEvent) {
-        calculateX(event.x)
-        invalidate()
-    }
-
-    private fun handleActionUp(event: MotionEvent) {
-        calculateX(event.x)
-    }
-
-    private fun calculateX(x: Float) {
-        val leftDistance = abs(x - startTrimX)
-        val rightDistance = abs(x - endTrimX)
-        if (leftDistance < rightDistance && endTrimX - x > minGap) {
-            if(endTrimX - x >= minGap && x > 0) {
-                startTrimX = x
-            }
-        } else {
-            if (x - startTrimX >= minGap && x - startTrimX > minGap && x < mWidth) {
-                endTrimX = x
-            }
-        }
     }
 
 }
