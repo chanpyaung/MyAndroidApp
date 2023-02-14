@@ -9,6 +9,8 @@ import java.io.*
 
 interface WaveFormRepository {
 
+
+    var originalFileName: String?
     suspend fun readWaveFormEnvelopeFromFile(uri: Uri): List<Pair<Float, Float>>
 
     suspend fun writeWaveFormToFile(waveforms: List<Pair<Float, Float>>, uri: Uri): Boolean
@@ -17,7 +19,7 @@ interface WaveFormRepository {
 
 class WaveFormRepositoryImpl(private val context: Context): WaveFormRepository {
 
-    var originalFileName: String? = null
+    override var originalFileName: String? = null
     override suspend fun readWaveFormEnvelopeFromFile(uri: Uri): List<Pair<Float, Float>> = withContext(Dispatchers.IO) {
         originalFileName = getFileName(uri)
         readTextFromUri(context, uri)
