@@ -44,7 +44,27 @@ class WaveFormViewTest {
             .perform(performAddWaveForms(waveforms))
             .check(
                 ViewAssertions.matches(
-                    withSomeWaveForms(waveforms)
+                    withSomeWaveForms(waveforms, false)
+                )
+            )
+    }
+
+    @Test
+    fun testTrimmedWaveForms() {
+        val start = 1
+        val end = waveforms.size - 2
+        val trimmedWaveForms = waveforms.slice(start..end)
+        Espresso.onView(ViewMatchers.withId(R.id.waveFormView))
+            .check(
+                ViewAssertions.matches(
+                    ViewMatchers.isDisplayed()
+                )
+            )
+            .perform(performAddWaveForms(waveforms))
+            .perform(performTrimmedWaveForms(start, end))
+            .check(
+                ViewAssertions.matches(
+                    withSomeWaveForms(trimmedWaveForms, true)
                 )
             )
     }
@@ -63,7 +83,23 @@ class WaveFormViewTest {
         }
     }
 
-    private fun withSomeWaveForms(expected: List<Pair<Float, Float>>): Matcher<View> {
+    private fun performTrimmedWaveForms(start: Int, end: Int): ViewAction {
+        return object : ViewAction {
+            override fun getDescription(): String = "action to trimmed waveform which should be same as original as the trimmer are not moved"
+
+            override fun getConstraints(): Matcher<View> = ViewMatchers.isAssignableFrom(WaveFormView::class.java)
+
+            override fun perform(uiController: UiController?, view: View?) {
+                val waveFormView = view as WaveFormView
+                waveFormView.addWaveForms(waveforms)
+                waveFormView.trimAt(start, end)
+//                waveFormView.getTrimmedWaveForm()
+            }
+
+        }
+    }
+
+    private fun withSomeWaveForms(expected: List<Pair<Float, Float>>, trimmed: Boolean): Matcher<View> {
         return object : TypeSafeMatcher<View>() {
             override fun describeTo(description: Description?) {
                 description?.appendText("WaveFormView should have expected values")
@@ -73,7 +109,9 @@ class WaveFormViewTest {
                 if (item !is WaveFormView) {
                     return false
                 }
-                return item.getWaveForms() === expected
+                return if (trimmed)
+                    item.getTrimmedWaveForm()?.first()?.first == expected.first().first && item.getTrimmedWaveForm()?.last()?.second == expected.last().second
+                else item.getWaveForms()?.first() == expected.first()
             }
         }
     }

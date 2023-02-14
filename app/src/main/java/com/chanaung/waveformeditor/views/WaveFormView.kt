@@ -121,17 +121,24 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
         invalidate()
     }
 
+    fun trimAt(start: Int, end: Int) {
+        waveForms?.let { wforms ->
+            val stepX = mWidth/(wforms.size-1)
+            startTrimX = (start) * stepX
+            endTrimX = (end) * stepX
+        }
+    }
     fun getTrimmedWaveForm(): List<Pair<Float, Float>>? {
         if (waveForms?.isEmpty() == true) {
             return null
         }
         waveForms?.let { wforms ->
-            val startIndex = (startTrimX / width * wforms.size - 1).toInt()
-            var endIndex = (endTrimX / width * wforms.size - 1).toInt()
+            val startIndex = (startTrimX / mWidth * wforms.size).toInt()
+            var endIndex = (endTrimX / mWidth * wforms.size).toInt()
             if (endIndex == wforms.size) {
                 endIndex -= 1
             }
-            return wforms.toMutableList().slice(startIndex..endIndex)
+            return wforms.slice(startIndex..endIndex)
         }
         return null
     }
