@@ -18,8 +18,23 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        release {
+            storeFile file('../../../keystores/androidkey.jks')
+            storePassword '1qaz@WSX'
+            keyAlias 'android_app_default_key'
+            keyPassword '1qaz@WSX'
+        }
+    }
+
     buildTypes {
         release {
+            minifyEnabled true
+            debuggable false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

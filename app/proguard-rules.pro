@@ -14,8 +14,29 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-renamesourcefileattribute SourceFile
+-keep public class androidx.lifecycle.ViewModel
+-keep public class androidx.lifecycle.LiveData
+-keepclassmembers class * extends androidx.lifecycle.ViewModel {
+    <init>();
+}
+-keepclassmembers class * extends androidx.lifecycle.MutableLiveData {
+    <init>();
+}
+-keepclassmembers class * extends androidx.lifecycle.LiveData {
+    <init>();
+}
+-keep class **.*ViewModel {
+    *;
+}
+-keep class **.*LiveData {
+    *;
+}
+-keep class kotlin.coroutines.* { *; }
+-keep class kotlinx.coroutines.experimental.* { *; }
+-keep class kotlinx.coroutines.reactive.* { *; }
+-keep class kotlinx.coroutines.android.* { *; }
