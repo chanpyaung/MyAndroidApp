@@ -28,14 +28,12 @@ class WaveFormRepositoryImpl(private val context: Context): WaveFormRepository {
         withContext(Dispatchers.IO) {
             try {
                 val outputStream = context.contentResolver.openOutputStream(uri)
-                trimmedWaveForms?.let { waveforms ->
-                    if (waveforms.isNotEmpty()) {
-                        for (pair in waveforms) {
-                            outputStream?.write("${pair.first} ${pair.second}\n".toByteArray())
-                        }
-                        outputStream?.close()
-                        result = true
+                if (trimmedWaveForms.isNotEmpty()) {
+                    for (pair in trimmedWaveForms) {
+                        outputStream?.write("${pair.first} ${pair.second}\n".toByteArray())
                     }
+                    outputStream?.close()
+                    result = true
                 }
             } catch (e: IOException) {
                 result = false

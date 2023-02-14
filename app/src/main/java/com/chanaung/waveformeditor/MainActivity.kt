@@ -14,13 +14,8 @@ class MainActivity : AppCompatActivity() {
         MainViewModel.Factory
     }
     private lateinit var binding: ActivityMainBinding
-    private var originalFileName: String? = null
     private val getContent = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
-            val file = File(it.path)
-            if (file.isFile) {
-                originalFileName = file.name
-            }
             viewModel.loadWaveFormFromFile(it)
         }
     }

@@ -31,7 +31,9 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     private val clipPath = Path()
     private var mWidth = 1f
     private var mHeight = 1f
-    private var waveForms = mutableListOf<Pair<Float, Float>>()
+    private var waveForms: List<Pair<Float, Float>>? = null
+
+    fun getWaveForms(): List<Pair<Float, Float>>? = waveForms
 
     private var trimLinePaint = Paint().apply {
         color = Color.argb(255, 126, 137, 153)
@@ -42,7 +44,7 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
         mHeight = resources.displayMetrics.heightPixels.toFloat()
         path.reset()
         clipPath.reset()
-        waveForms.clear()
+        waveForms = null
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -51,7 +53,7 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     override fun draw(canvas: Canvas?) {
         super.draw(canvas)
         canvas?.let {
-            if (waveForms.isNotEmpty()) {
+            if (waveForms?.isNotEmpty() == true) {
                 drawWaveForm(it)
             }
         }
@@ -65,32 +67,36 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     }
 
     private fun drawWaveForm(canvas: Canvas) {
+        if (waveForms.isNullOrEmpty()) {
+            return
+        }
         path.reset()
         val defaultAmplitudeHeight = 1.0f
         val centerY = (mHeight/2).toFloat() // this should give me the middle point, so assuming top = 0 to be 1, centerY = 0 && height/bottom = -1
-        val stepX = mWidth/(waveForms.size-1)
-        for (i in 0 until  waveForms.size-1) {
-            val start = i * stepX
-            val right = (i + 1) * stepX
-            val top = abs(waveForms[i].second) * centerY
-            val nexTop = abs(waveForms[i+1].second) * centerY
-            val amplitudeTop = (centerY - top) * defaultAmplitudeHeight
-            val nextAmplitudeTop = (centerY - nexTop) * defaultAmplitudeHeight
-            val bottom = abs(waveForms[i].first) * centerY
-            val nextBottom = abs(waveForms[i+1].first) * centerY
-            val amplitudeBottom = (centerY + bottom ) * defaultAmplitudeHeight
-            val nextAmplitudeBottom = (centerY + nextBottom ) * defaultAmplitudeHeight
+        waveForms?.let { waveForms ->
+            val stepX = mWidth/(waveForms.size-1)
+            for (i in 0 until  waveForms.size-1) {
+                val start = i * stepX
+                val right = (i + 1) * stepX
+                val top = abs(waveForms[i].second) * centerY
+                val nexTop = abs(waveForms[i+1].second) * centerY
+                val amplitudeTop = (centerY - top) * defaultAmplitudeHeight
+                val nextAmplitudeTop = (centerY - nexTop) * defaultAmplitudeHeight
+                val bottom = abs(waveForms[i].first) * centerY
+                val nextBottom = abs(waveForms[i+1].first) * centerY
+                val amplitudeBottom = (centerY + bottom ) * defaultAmplitudeHeight
+                val nextAmplitudeBottom = (centerY + nextBottom ) * defaultAmplitudeHeight
 
-            path.apply {
-                moveTo(start, amplitudeTop)
-                lineTo(start, amplitudeBottom)
-                lineTo(right, nextAmplitudeBottom)
-                lineTo(right, nextAmplitudeTop)
+                path.apply {
+                    moveTo(start, amplitudeTop)
+                    lineTo(start, amplitudeBottom)
+                    lineTo(right, nextAmplitudeBottom)
+                    lineTo(right, nextAmplitudeTop)
+                }
             }
         }
         path.lineTo(mWidth, centerY)
         path.close()
-
         canvas.drawPath(path, inactivePaint)
         canvas.save()
         clipPath.reset()
@@ -103,12 +109,12 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
 
     fun addWaveForms(mWaveforms: List<Pair<Float, Float>>) {
         invalidate()
-        waveForms.clear()
-        waveForms.addAll(mWaveforms)
+        waveForms = null
+        waveForms = mWaveforms
     }
 
     fun clear() {
-        waveForms.clear()
+        waveForms = null
         path.reset()
         startTrimX = 0f
         endTrimX = mWidth
@@ -116,15 +122,18 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     }
 
     fun getTrimmedWaveForm(): List<Pair<Float, Float>>? {
-        if (waveForms.isEmpty()) {
+        if (waveForms?.isEmpty() == true) {
             return null
         }
-        val startIndex = (startTrimX / width * waveForms.size).toInt()
-        var endIndex = (endTrimX / width * waveForms.size).toInt()
-        if (endIndex == waveForms.size) {
-            endIndex -= 1
+        waveForms?.let { wforms ->
+            val startIndex = (startTrimX / width * wforms.size - 1).toInt()
+            var endIndex = (endTrimX / width * wforms.size - 1).toInt()
+            if (endIndex == wforms.size) {
+                endIndex -= 1
+            }
+            return wforms.toMutableList().slice(startIndex..endIndex)
         }
-        return waveForms.toMutableList().slice(startIndex..endIndex)
+        return null
     }
 
     private fun drawTrimLines(canvas: Canvas) {
