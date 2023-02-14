@@ -1,32 +1,61 @@
 package com.chanaung.waveformeditor.views
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
+import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import kotlin.math.abs
 
 class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs) {
 
-    private var paint = Paint()
-    private val path = Path()
-    private var width = 1f
-    private var height = 1f
-    private var waveForms = mutableListOf<Pair<Float, Float>>()
-    init {
-        paint.apply {
-            color = Color.rgb(76, 175, 80)
-            strokeWidth = 0f
-            isAntiAlias = true
-            style = Paint.Style.FILL_AND_STROKE
-        }
+    private var paint = Paint().apply {
+        color = Color.argb( 255, 76, 175, 80)
+        strokeWidth = 2f
+        isAntiAlias = true
+        style = Paint.Style.FILL_AND_STROKE
+    }
 
-        width = resources.displayMetrics.widthPixels.toFloat()
-        height = resources.displayMetrics.heightPixels.toFloat()
+    private var inactivePaint = Paint().apply {
+        color = Color.argb(255, 62, 69, 77)
+        strokeWidth = 2f
+        isAntiAlias = true
+        style = Paint.Style.FILL_AND_STROKE
+    }
+
+    private var startTrimX = 0F
+    private var endTrimX = resources.displayMetrics.widthPixels.toFloat() - 10f
+    private val minGap = 50f
+
+    private val path = Path()
+    private var mWidth = 1f
+    private var mHeight = 1f
+    private var waveForms = mutableListOf<Pair<Float, Float>>()
+
+    private var trimArea: RectF
+
+    private var trimAreaPaint = Paint().apply {
+        color = Color.argb(0,255, 255, 255)
+    }
+    private var trimLinePaint = Paint().apply {
+        color = Color.argb(255, 126, 137, 153)
+        strokeWidth = 5f
+    }
+    init {
+        mWidth = resources.displayMetrics.widthPixels.toFloat()
+        mHeight = resources.displayMetrics.heightPixels.toFloat()
+        trimArea = RectF().apply {
+            left = startTrimX
+            right = endTrimX
+            top = 0f
+            bottom = resources.displayMetrics.heightPixels.toFloat()
+        }
         waveForms.clear()
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
     override fun draw(canvas: Canvas?) {
         super.draw(canvas)
@@ -39,18 +68,20 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        width = w.toFloat()
-        height = h.toFloat()
+        mWidth = w.toFloat()
+        mHeight = h.toFloat()
+        endTrimX = mWidth
     }
 
     private fun drawWaveForm(canvas: Canvas) {
-        path.reset()
-        val defaultAmplitudeHeight = 0.5f
-        val centerY = height/2 // this should give me the middle point, so assuming top = 0 to be 1, centerY = 0 && height/bottom = -1
-        val stepX = width/(waveForms.size-1)
-        for (i in 0 until  waveForms.size-2) {
-            var start = i * stepX
-            var right = (i + 1) * stepX
+
+        val defaultAmplitudeHeight = 1.0f
+        val centerY = (mHeight/2).toFloat() // this should give me the middle point, so assuming top = 0 to be 1, centerY = 0 && height/bottom = -1
+        val stepX = mWidth/(waveForms.size-1)
+        for (i in 0 until  waveForms.size-1) {
+            path.reset()
+            val start = i * stepX
+            val right = (i + 1) * stepX
             val top = abs(waveForms[i].second) * centerY
             val nexTop = abs(waveForms[i+1].second) * centerY
             val amplitudeTop = (centerY - top) * defaultAmplitudeHeight
@@ -65,16 +96,94 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
                 lineTo(start, amplitudeBottom)
                 lineTo(right, nextAmplitudeBottom)
                 lineTo(right, nextAmplitudeTop)
+                //TODO: add curveTo?
             }
-
+            canvas.drawPath(path, if (start < startTrimX || right > endTrimX) inactivePaint else paint)
+            if (i == waveForms.size - 2) {
+                Log.d("END: ", "right: $right, width: $mWidth, i: $i, wfs: ${waveForms.size}, WF: ${waveForms[i+1]}")
+            }
         }
-        canvas.drawPath(path, paint)
+
+        drawTrimArea(canvas)
     }
 
     fun addWaveForms(mWaveforms: List<Pair<Float, Float>>) {
         invalidate()
         waveForms.clear()
         waveForms.addAll(mWaveforms)
+    }
+
+    fun clear() {
+        waveForms.clear()
+        path.reset()
+        startTrimX = 0f
+        endTrimX = mWidth
+        invalidate()
+    }
+
+    fun getTrimmedWaveForm(): List<Pair<Float, Float>> {
+        val startIndex = (startTrimX / width * waveForms.size).toInt()
+        var endIndex = (endTrimX / width * waveForms.size).toInt()
+        if (endIndex == waveForms.size) {
+            endIndex -= 1
+        }
+        Log.d("start: ", "startTrimX: $startTrimX, $startIndex")
+        Log.d("end: ", "endTrimX: $endTrimX, $endIndex")
+        return waveForms.toMutableList().slice(startIndex..endIndex)
+    }
+
+    private fun drawTrimArea(canvas: Canvas) {
+        if (trimArea.width() <= 0 || trimArea.height() <= 0) {
+            return
+        }
+        canvas.drawRect(trimArea, trimAreaPaint)
+        canvas.drawLine(startTrimX, 0f, startTrimX, mHeight, trimLinePaint)
+        canvas.drawLine(endTrimX, 0f, endTrimX, mHeight, trimLinePaint)
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        when(event?.action) {
+            MotionEvent.ACTION_DOWN -> {
+                handleActionDown(event)
+            }
+            MotionEvent.ACTION_UP -> {
+                handleActionUp(event)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                handleActionMove(event)
+            }
+            else -> return false
+        }
+        return true
+    }
+
+    private fun handleActionDown(event: MotionEvent) {
+        calculateX(event.x)
+    }
+
+    private fun handleActionMove(event: MotionEvent) {
+        calculateX(event.x)
+        invalidate()
+    }
+
+    private fun handleActionUp(event: MotionEvent) {
+        calculateX(event.x)
+    }
+
+    private fun calculateX(x: Float) {
+        val leftDistance = abs(x - startTrimX)
+        val rightDistance = abs(x - endTrimX)
+        if (leftDistance < rightDistance && endTrimX - x > minGap) {
+            if(endTrimX - x >= minGap && x > 0) {
+                trimArea.left = x
+                startTrimX = x
+            }
+        } else {
+            if (x - startTrimX >= minGap && x - startTrimX > minGap && x < mWidth) {
+                trimArea.right = x
+                endTrimX = x
+            }
+        }
     }
 
 }

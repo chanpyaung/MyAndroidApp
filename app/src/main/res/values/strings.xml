@@ -2,4 +2,6 @@
     <string name="app_name">WaveFormEditor</string>
     <string name="import_text_file">Import Text File</string>
     <string name="browse">Browse</string>
+    <string name="save">Save</string>
+    <string name="crop">Crop</string>
 </resources>

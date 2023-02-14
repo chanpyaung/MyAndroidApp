@@ -8,35 +8,58 @@
 
     <com.chanaung.waveformeditor.views.WaveFormView
         android:id="@+id/waveFormView"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         android:layout_width="0dp"
-        android:layout_height="400dp"/>
+        android:layout_height="400dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@color/grey"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/openFileBtn"
         style="@style/Widget.MaterialComponents.Button.Icon"
-        app:icon="@drawable/baseline_open_in_new_24"
-        app:layout_constraintTop_toBottomOf="@id/waveFormView"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="@dimen/medium_margin"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
         android:text="@string/browse"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:textAllCaps="false"
+        app:iconGravity="textStart"
+        app:icon="@drawable/baseline_add_24"
+        app:layout_constraintEnd_toStartOf="@+id/cropBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/waveFormView" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/cropBtn"
+        style="@style/Widget.MaterialComponents.Button.Icon"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:text="@string/crop"
+        android:textAllCaps="false"
+        app:iconGravity="textStart"
+        app:icon="@drawable/baseline_content_cut_24"
+        app:layout_constraintEnd_toStartOf="@+id/saveFileBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/openFileBtn"
+        app:layout_constraintTop_toBottomOf="@id/waveFormView" />
+
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/saveFileBtn"
         style="@style/Widget.MaterialComponents.Button.Icon"
-        app:layout_constraintTop_toBottomOf="@id/waveFormView"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:text="@string/save"
+        android:textAllCaps="false"
+        app:iconGravity="textStart"
+        app:icon="@drawable/baseline_done_24"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="@dimen/medium_margin"
-        android:text="Save"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/cropBtn"
+        app:layout_constraintTop_toBottomOf="@id/waveFormView" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
