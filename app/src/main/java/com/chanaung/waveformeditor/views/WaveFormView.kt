@@ -216,7 +216,11 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     private fun updateGestureExclusion() {
         // Skip this call if we're not running on Android 10+
         if (Build.VERSION.SDK_INT < 29) return
-        systemGestureExclusionRects.add(pathArea.toRect())
+
+        // First, lets clear out any existing rectangles
+        gestureExclusionRects.clear()
+        gestureExclusionRects += pathArea.toRect()
+        systemGestureExclusionRects = gestureExclusionRects
     }
 
 }
