@@ -6,7 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.chanaung.waveformeditor.databinding.ActivityMainBinding
-import java.io.File
 
 class MainActivity : AppCompatActivity() {
 

@@ -1,15 +1,11 @@
 package com.chanaung.waveformeditor
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.*
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.chanaung.waveformeditor.utils.Event
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class MainViewModel(
     private val dispatcher: CoroutineDispatcher,
@@ -28,6 +24,8 @@ class MainViewModel(
     private val _waveForms = MutableLiveData<List<Pair<Float, Float>>>()
     val waveForms: LiveData<List<Pair<Float, Float>>> get() = _waveForms
     val fileSaveResult = MutableLiveData<Event<Boolean>>()
+    private val viewModelJob = SupervisorJob()
+    private val uiScope = CoroutineScope(dispatcher + viewModelJob)
 
     fun loadWaveFormFromFile(uri: Uri) {
         val mWaveForms = mutableListOf<Pair<Float, Float>>()
@@ -39,7 +37,7 @@ class MainViewModel(
     }
 
     fun saveToFile(uri: Uri, trimmedWaveForms: List<Pair<Float, Float>>) {
-        viewModelScope.launch(dispatcher) {
+        uiScope.launch(dispatcher) {
             val saveFile = async { waveFormRepository.writeWaveFormToFile(trimmedWaveForms, uri) }
             val result = saveFile.await()
             fileSaveResult.postValue(Event(result))
@@ -49,5 +47,10 @@ class MainViewModel(
     fun getFileName(): String = waveFormRepository.originalFileName?.let {
         "copyOf$it"
     } ?: "file.txt"
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelJob.cancel()
+    }
 
 }

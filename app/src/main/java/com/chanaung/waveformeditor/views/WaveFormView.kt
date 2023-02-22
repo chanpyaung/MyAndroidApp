@@ -12,7 +12,7 @@ import kotlin.math.abs
 class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs) {
 
     companion object {
-        const val TRIM_LINE_TOUCH_AREA = 30f
+        const val TRIM_LINE_TOUCH_AREA = 50f
     }
     private enum class TrimLine {
         START, END, NONE
@@ -34,7 +34,7 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
 
     private var startTrimX = 0F
     private var endTrimX = resources.displayMetrics.widthPixels.toFloat() - 10f
-    private val minGap = 50f
+    private val minGap = 100f
 
     private val path = Path()
     private val pathArea = RectF()
@@ -49,12 +49,12 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
 
     private var trimLinePaint = Paint().apply {
         color = Color.argb(255, 126, 137, 153)
-        strokeWidth = 5f
+        strokeWidth = 10f
     }
 
     private var activeTrimLinePaint = Paint().apply {
         color = Color.WHITE
-        strokeWidth = 5f
+        strokeWidth = 10f
     }
     init {
         mWidth = resources.displayMetrics.widthPixels.toFloat()
@@ -66,6 +66,9 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        mWidth = MeasureSpec.getSize(widthMeasureSpec).toFloat()
+        mHeight= MeasureSpec.getSize(heightMeasureSpec).toFloat()
+        setMeasuredDimension(mWidth.toInt(), mHeight.toInt())
     }
     override fun draw(canvas: Canvas?) {
         super.draw(canvas)
@@ -89,30 +92,44 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
         }
         path.reset()
         val defaultAmplitudeHeight = 1.0f
-        val centerY = (mHeight/2).toFloat() // this should give me the middle point, so assuming top = 0 to be 1, centerY = 0 && height/bottom = -1
+        val centerY = (mHeight/2) // this should give me the middle point, so assuming top = 0 to be 1, centerY = 0 && height/bottom = -1
         waveForms?.let { waveForms ->
-            val stepX = mWidth/(waveForms.size-1)
-            for (i in 0 until  waveForms.size-1) {
-                val start = i * stepX
-                val right = (i + 1) * stepX
-                val top = abs(waveForms[i].second) * centerY
-                val nexTop = abs(waveForms[i+1].second) * centerY
-                val amplitudeTop = (centerY - top) * defaultAmplitudeHeight
-                val nextAmplitudeTop = (centerY - nexTop) * defaultAmplitudeHeight
-                val bottom = abs(waveForms[i].first) * centerY
-                val nextBottom = abs(waveForms[i+1].first) * centerY
-                val amplitudeBottom = (centerY + bottom ) * defaultAmplitudeHeight
-                val nextAmplitudeBottom = (centerY + nextBottom ) * defaultAmplitudeHeight
+            val stepX = mWidth/(waveForms.size)
+            if (waveForms.size > 1) {
+                for (i in 0 until  waveForms.size-1) {
+                    val start = i * stepX
+                    val right = (i + 1) * stepX
+                    val top = abs(waveForms[i].second) * centerY
+                    val nexTop = abs(waveForms[i+1].second) * centerY
+                    val amplitudeTop = (centerY - top) * defaultAmplitudeHeight
+                    val nextAmplitudeTop = (centerY - nexTop) * defaultAmplitudeHeight
+                    val bottom = abs(waveForms[i].first) * centerY
+                    val nextBottom = abs(waveForms[i+1].first) * centerY
+                    val amplitudeBottom = (centerY + bottom ) * defaultAmplitudeHeight
+                    val nextAmplitudeBottom = (centerY + nextBottom ) * defaultAmplitudeHeight
 
-                path.apply {
-                    moveTo(start, amplitudeTop)
-                    lineTo(start, amplitudeBottom)
-                    lineTo(right, nextAmplitudeBottom)
-                    lineTo(right, nextAmplitudeTop)
+                    path.apply {
+                        moveTo(start, amplitudeTop)
+                        lineTo(start, amplitudeBottom)
+                        lineTo(right, nextAmplitudeBottom)
+                        lineTo(right, nextAmplitudeTop)
+                    }
+                }
+            } else {
+                for (i in waveForms.indices) {
+                    val start = i * stepX
+                    val amplitudeTop = (centerY - abs(waveForms[i].second) * centerY) * defaultAmplitudeHeight
+                    val amplitudeBottom = (centerY + abs(waveForms[i].first) * centerY) * defaultAmplitudeHeight
+                    path.apply {
+                        moveTo(start, amplitudeTop)
+                        lineTo(start, amplitudeBottom)
+                        if (i == waveForms.size - 1) {
+                            lineTo(mWidth, centerY)
+                        }
+                    }
                 }
             }
         }
-        path.lineTo(mWidth, centerY)
         path.close()
         canvas.drawPath(path, inactivePaint)
         canvas.save()

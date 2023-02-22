@@ -50,9 +50,9 @@ class WaveFormRepositoryImpl(private val context: Context): WaveFormRepository {
         val waveFormsInText = mutableListOf<Pair<Float, Float>>()
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             BufferedReader(InputStreamReader(inputStream)).use { reader ->
-                val pattern = Regex("^-?\\d+\\.\\d+\\s+-?\\d+\\.\\d+\$")
+                val pattern = Regex("^-?\\d+(?:\\.\\d+)?\\s-?\\d+(?:\\.\\d+)?\\s*\$")
                 var line: String? = reader.readLine() ?: return emptyList()
-                while (line != null && line.matches(pattern)) {
+                while (line != null) {
                     val values = line.split(" ")
                     if (values.size == 2) {
                         waveFormsInText.add(Pair(values[0].toFloat(), values[1].toFloat()))
