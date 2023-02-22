@@ -2,9 +2,11 @@ package com.chanaung.waveformeditor.views
 
 import android.content.Context
 import android.graphics.*
+import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import androidx.core.graphics.toRect
 import kotlin.math.abs
 
 class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs) {
@@ -35,11 +37,13 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
     private val minGap = 50f
 
     private val path = Path()
+    private val pathArea = RectF()
     private val clipPath = Path()
     private var mWidth = 1f
     private var mHeight = 1f
     private var waveForms: List<Pair<Float, Float>>? = null
     private var activeTrimLine = TrimLine.NONE
+    private val gestureExclusionRects = mutableListOf<Rect>()
 
     fun getWaveForms(): List<Pair<Float, Float>>? = waveForms
 
@@ -113,11 +117,18 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
         canvas.drawPath(path, inactivePaint)
         canvas.save()
         clipPath.reset()
-        clipPath.addRect(startTrimX, 0f, endTrimX, mHeight, Path.Direction.CCW)
+        pathArea.apply {
+            left = startTrimX
+            top = 0f
+            right = endTrimX
+            bottom = mHeight
+        }
+        clipPath.addRect(pathArea, Path.Direction.CCW)
         canvas.clipPath(clipPath)
         canvas.drawPath(path, paint)
         canvas.restore()
         drawTrimLines(canvas)
+        updateGestureExclusion()
     }
 
     fun addWaveForms(mWaveforms: List<Pair<Float, Float>>) {
@@ -200,6 +211,26 @@ class WaveFormView(context: Context, attrs: AttributeSet) : View(context, attrs)
             }
         }
         return true
+    }
+
+    private fun updateGestureExclusion() {
+        // Skip this call if we're not running on Android 10+
+        if (Build.VERSION.SDK_INT < 29) return
+
+        // First, lets clear out any existing rectangles
+        gestureExclusionRects.clear()
+
+        // Now lets work out which areas should be excluded. For a SeekBar this will
+        // be the bounds of the thumb drawable.
+        pathArea?.also {
+            gestureExclusionRects += it.toRect()
+        }
+
+        // If we had other elements in this view near the edges, we could exclude them
+        // here too, by adding their bounds to the list
+
+        // Finally pass our updated list of rectangles to the system
+        systemGestureExclusionRects = gestureExclusionRects
     }
 
 }
